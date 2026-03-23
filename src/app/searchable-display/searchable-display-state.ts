@@ -20,24 +20,59 @@ export class SearchableDisplayState {
 
 	globalQuery(query: string | null | undefined): void {
 		const queryString = query ?? '';
-		if (this.tableState()) {
-			let filteredData = this.queryDisplayedColumns(this.tableState()!.tableModel.data, this.tableState()!.visibleColumns, queryString);
-			if (this.tableStateAltered(this.tableState()!, filteredData)) {
-				this.tableState.update((prevState: TableState | undefined) => {
-					return {
-						...prevState,
-						displayedData: filteredData,
-					} as TableState;
-				});
+		if (this.tableState() && this.tableState()?.globalSearchTerm !== queryString) {
+			this.filterDataPipeline({ globalSearchTerm: queryString });
+		}
+	}
+
+	performColumnQueries(columnSearch: { [columnHeader: string]: string }): void {
+	if (this.tableState()) {
+		const activeColumnSearches: { [columnHeader: string]: string } = {};
+		for (const entry of Object.keys(this.tableState()!.columnSearchTerms || {})) {
+			if (this.tableState()!.columnSearchTerms?.[entry]) {
+				activeColumnSearches[entry] = this.tableState()!.columnSearchTerms?.[entry] ?? '' as string;
 			}
+		}
+		const mergedColumnSearches = { ...activeColumnSearches, ...columnSearch };
+		this.filterDataPipeline({ columnSearchTerms: mergedColumnSearches });
+	}
+}
+	private filterDataPipeline({ globalSearchTerm, columnSearchTerms }: { globalSearchTerm?: string; columnSearchTerms?: { [columnHeader: string]: string } }): void {
+		let currentState = this.tableState();
+		if (!currentState) {
+			return;
+		}
+
+		let filteredData = currentState.tableModel.data;
+		
+		let globalSearchValue = globalSearchTerm ?? currentState.globalSearchTerm ?? '';
+		if (globalSearchValue) {
+			filteredData = this.queryDisplayedColumns(filteredData, currentState.visibleColumns, globalSearchValue);
+		}
+
+		let columnSearchTermsObj = columnSearchTerms ?? currentState.columnSearchTerms;
+		if (columnSearchTermsObj) {
+			for (let columnHeader in columnSearchTermsObj) {
+				let columnDef = currentState.tableModel.dataColumns.find(col => col.header === columnHeader);
+				if (columnDef && columnSearchTermsObj[columnHeader]) {
+					filteredData = this.queryIndividualColumn(filteredData, columnDef, columnSearchTermsObj[columnHeader]);
+				}
+			}
+		}
+		if (this.tableStateAltered(currentState, filteredData)) {
+			this.tableState.set({
+				...currentState,
+				displayedData: filteredData,
+				globalSearchTerm,
+				columnSearchTerms: columnSearchTermsObj,
+			});
 		}
 	}
 
 	private queryDisplayedColumns(data: any[], columns: ColumnDefinition[], query: string): any[] {
 		return data.filter(row => {
 			for (let visibleColDef of columns) {
-				let cellValue = visibleColDef.valueDisplayMapper(row);
-				if (cellValue && cellValue.toLocaleLowerCase().includes(query.toLocaleLowerCase())) {
+				if (this.matchCell(row, visibleColDef, query)) {
 					return true;
 				}
 			}
@@ -45,7 +80,21 @@ export class SearchableDisplayState {
 		});
 	}
 
+	private queryIndividualColumn(data: any[], column: ColumnDefinition, query: string): any[] {
+		return data.filter(row => {
+			return this.matchCell(row, column, query);
+		});
+	}
+
+	private matchCell(row: any, column: ColumnDefinition, query: string): boolean {
+		let cellValue = column.valueDisplayMapper(row);
+		return cellValue.toLocaleLowerCase().includes(query.toLocaleLowerCase());
+	}
+
 	private tableStateAltered(currentState: TableState, newDisplayedData: any[]): boolean {
+		if (!currentState || !currentState.displayedData) {
+			return true;
+		}
 		if (currentState.displayedData.length !== newDisplayedData.length) {
 			return true;
 		}
