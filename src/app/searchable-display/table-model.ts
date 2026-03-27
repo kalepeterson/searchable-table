@@ -43,8 +43,13 @@ export interface TableState {
 	currentPage?: number;
 	pageSize?: number;
 	globalSearchTerm?: string;
-	columnSearchTerms?: { [columnHeader: string]: string | undefined };
+	columnSearchTerms?: ColumnSearchTerm[];
 	sortColumn?: string;
 	sortDirection?: 'asc' | 'desc';
 	visibilityGroup?: 'all' | 'none' | string;
+}
+
+export interface ColumnSearchTerm {
+	columnHeader: string;
+	searchTerm: string | undefined;
 }

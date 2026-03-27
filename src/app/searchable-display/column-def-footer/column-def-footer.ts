@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { SearchableDisplayState } from '../searchable-display-state';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { debounceTime, map, merge } from 'rxjs';
+import { combineLatest, debounceTime, map } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { ColumnSearchTerm } from '../table-model';
 
 @Component({
   selector: 'tfoot[sd-column-def-footer]',
@@ -40,22 +41,20 @@ export class ColumnDefFooter {
     return controls;
   });
 
-  protected readonly columnSearchChange$ = merge(Object.entries(this.columnSearchControls())
+  protected readonly columnSearchChange = toSignal(combineLatest(Object.entries(this.columnSearchControls())
       .map(controlMapping => {
         const [header, control] = controlMapping;
         return control.valueChanges.pipe(
           debounceTime(300),
           map(value => {
             return {
-              key: header,
-              value: value ?? '' as string,
-            };
+              header: header,
+              searchTerm: value ?? '',
+            } as unknown as ColumnSearchTerm;
           })
         );
     })
-  );
-
-  protected readonly columnSearchChange = toSignal(this.columnSearchChange$);  
+  ));  
 
   constructor() {
     // Subscribe to changes in column search controls and update the table state accordingly
@@ -63,9 +62,7 @@ export class ColumnDefFooter {
       const tstate = this.tableStateService.tableState();
       const columnSearchChanges = this.columnSearchChange();
       if (tstate && columnSearchChanges) {
-        columnSearchChanges.subscribe((columnSearchChangeVal) => {  
-          this.tableStateService.performColumnQueries(columnSearchChangeVal);
-        });
+          this.tableStateService.performColumnQueries(columnSearchChanges);
       }
     });
   }

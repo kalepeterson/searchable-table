@@ -1,3 +1,9 @@
+export interface UserData extends User {
+  formattedAddress: string;
+  formattedGeo: string;
+  formattedCompany: string;
+}
+
 export interface User {
   id: number;
   name: string;
