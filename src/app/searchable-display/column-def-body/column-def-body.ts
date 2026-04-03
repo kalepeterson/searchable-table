@@ -7,7 +7,7 @@ import { SearchableDisplayState } from '../searchable-display-state';
 	template: `
 		@let tstate = tableState();
 		@if (tstate) {
-			@for (row of tstate.displayedData; track row) {
+			@for (row of tstate.displayedData; track row.id) {
 				<tr>
 				@for (columnDef of tstate.visibleColumns; track columnDef) {
 					<td>{{ columnDef.valueDisplayMapper(row) }}</td>

@@ -69,15 +69,16 @@ export class SearchableDisplay {
 
   protected readonly visibilityGroupOptions = computed(() => {
     let specifiedGroups: { display: string; value: string }[] = [];
-    if (this.tableModel().dataColumnVisibility) {
-      if (this.tableModel().dataColumnVisibility!.allowShowAll) {
+    let tableModel = this.tableModel();
+    if (tableModel.dataColumnVisibility) {
+      if (tableModel.dataColumnVisibility!.allowShowAll) {
         specifiedGroups.push({ display: 'Show All', value: 'all' });
       }
-      if (this.tableModel().dataColumnVisibility!.allowHideAll) {
+      if (tableModel.dataColumnVisibility!.allowHideAll) {
         specifiedGroups.push({ display: 'Hide All', value: 'none' });
       }
       for (let group of Object.entries(
-        this.tableModel().dataColumnVisibility!.visibilityGroups ?? {},
+        tableModel.dataColumnVisibility!.visibilityGroups ?? {},
       )) {
         specifiedGroups.push({ display: group[0], value: group[0] });
       }
@@ -85,14 +86,7 @@ export class SearchableDisplay {
     return specifiedGroups;
   });
 
-  protected readonly currentVisibilitySet = toSignal(
-    this.displayForm.controls.visibilityGroup.valueChanges.pipe(
-      debounceTime(300),
-      switchMap((value) => {
-        return [value];
-      }),
-    ),
-  );
+  protected readonly currentVisibilitySet = toSignal(this.displayForm.controls.visibilityGroup.valueChanges);
 
   constructor() {
     effect(() => this.tableStateService.initializeTableState(this.tableModel()));

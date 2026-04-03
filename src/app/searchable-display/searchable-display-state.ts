@@ -23,30 +23,33 @@ export class SearchableDisplayState {
 	globalQuery(query: string | null | undefined): void {
 		const queryString = query ?? '';
 		if (this.tableState() && this.tableState()?.globalSearchTerm !== queryString) {
-			this.filterDataPipeline({ globalSearchTerm: queryString });
+			const nextState = {
+				...this.tableState()!,
+				globalSearchTerm: queryString,
+			};
+			this.runDataPipeline(nextState);
 		}
 	}
 
 	performColumnQueries(columnSearches: ColumnSearchTerm[]): void {
 		const tableStateRef = this.tableState();
 		if (tableStateRef) {
-			this.filterDataPipeline({ columnSearchTerms: columnSearches });
+			const nextState = {
+				...tableStateRef,
+				columnSearchTerms: columnSearches,
+			};
+			this.runDataPipeline(nextState);
 		}
 	}
 
 	setVisibilityGroup(groupName: string): void {
-		if (this.tableState() && this.tableState()!.visibilityGroup !== groupName) {
+		var currentState = this.tableState();
+		if (currentState && currentState.visibilityGroup !== groupName) {
 			const nextState = {
-				...this.tableState()!,
+				...currentState,
 				visibilityGroup: groupName,
 			};
-
-			const visibleColumns = this.determineVisibleColumns(nextState);
-			nextState.visibleColumns = visibleColumns;
-
-			this.tableState.set(nextState);
-
-			this.filterDataPipeline({});
+			this.runDataPipeline(nextState);
 		}
 	}
 
@@ -57,42 +60,38 @@ export class SearchableDisplayState {
 			if (tstate.sortColumn === columnDef.header) {
 				nextSortDirection = tstate.sortDirection === 'asc' ? 'desc' : 'asc';
 			}
+			
 			const nextState = {
 				...tstate,
 				sortColumn: columnDef.header,
-				sortDirection: nextSortDirection,
+				sortDirection: nextSortDirection
 			};
-			this.tableState.set(nextState);
+			this.runDataPipeline(nextState);
 		}
 	}
 
-	private filterDataPipeline({
-		globalSearchTerm,
-		columnSearchTerms,
-	}: {
-		globalSearchTerm?: string;
-		columnSearchTerms?: ColumnSearchTerm[];
-	}): void {
+	private runDataPipeline(updatedState: TableState): void {
 		let currentState = this.tableState();
 		if (!currentState) {
 			return;
 		}
 
-		let filteredData = currentState.tableModel.data;
+		const visibleColumns = this.determineVisibleColumns(updatedState);
+		let filteredData = [...currentState.tableModel.data];
 
-		let globalSearchValue = globalSearchTerm ?? currentState.globalSearchTerm ?? '';
+		let globalSearchValue = updatedState.globalSearchTerm ?? currentState.globalSearchTerm ?? '';
 		if (globalSearchValue) {
 			filteredData = this.queryDisplayedColumns(
 				filteredData,
-				currentState.visibleColumns,
+				visibleColumns,
 				globalSearchValue,
 			);
 		}
 
-		let columnSearchTermsObj = columnSearchTerms ?? currentState.columnSearchTerms;
+		let columnSearchTermsObj = updatedState.columnSearchTerms ?? currentState.columnSearchTerms;
 		if (columnSearchTermsObj) {
 			for (let columnSearchTerm of columnSearchTermsObj) {
-				let columnDef = currentState.visibleColumns.find(
+				let columnDef = visibleColumns.find(
 					(col) => col.header === columnSearchTerm.columnHeader,
 				);
 				if (columnDef && columnSearchTerm.searchTerm) {
@@ -105,15 +104,28 @@ export class SearchableDisplayState {
 			}
 		}
 
-		if (this.tableStateAltered(currentState, filteredData)) {
-			// Table state altered, updating displayed data
-			this.tableState.set({
-				...currentState,
-				displayedData: filteredData,
-				globalSearchTerm,
-				columnSearchTerms: columnSearchTermsObj,
+		const sortColumn = updatedState.sortColumn ?? currentState.sortColumn;
+		const sortDirection = updatedState.sortDirection ?? currentState.sortDirection;
+		const sortColumnDef = visibleColumns.find(col => col.header === sortColumn);
+		if (sortColumnDef && sortDirection) {
+			filteredData.sort((a, b) => {
+				const aValue = sortColumnDef.valueDisplayMapper(a);
+				const bValue = sortColumnDef.valueDisplayMapper(b);
+				const comparison = aValue.localeCompare(bValue);
+				return sortDirection === 'asc' ? comparison : comparison * -1;
 			});
 		}
+
+		this.tableState.set({
+			...currentState,
+			visibilityGroup: updatedState.visibilityGroup,
+			visibleColumns,
+			displayedData: filteredData,
+			globalSearchTerm: globalSearchValue,
+			columnSearchTerms: columnSearchTermsObj,
+			sortColumn,
+			sortDirection,
+		});
 	}
 
 	private queryDisplayedColumns(data: any[], columns: ColumnDefinition[], query: string): any[] {

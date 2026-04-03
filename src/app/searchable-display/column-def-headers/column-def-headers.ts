@@ -45,6 +45,8 @@ export class ColumnDefHeaders {
 	});
 
 	sortColumn(columnDef: ColumnDefinition): void {
-		this.tableStateService.sortColumn(columnDef);
+		if (columnDef.sortable) {
+			this.tableStateService.sortColumn(columnDef);
+		}
 	}
 }
