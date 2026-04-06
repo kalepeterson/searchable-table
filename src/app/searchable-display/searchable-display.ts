@@ -7,10 +7,11 @@ import { SearchableDisplayState } from './searchable-display-state';
 import { ColumnDefFooter } from './column-def-footer/column-def-footer';
 import { debounceTime, switchMap } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { Pagination } from "./pagination/pagination";
 
 @Component({
   selector: 'sd-searchable-display',
-  imports: [ReactiveFormsModule, ColumnDefHeaders, ColumnDefBody, ColumnDefFooter],
+  imports: [ReactiveFormsModule, ColumnDefHeaders, ColumnDefBody, ColumnDefFooter, Pagination],
   template: `
     <form [formGroup]="displayForm">
       @if (title()) {
@@ -33,6 +34,9 @@ import { toSignal } from '@angular/core/rxjs-interop';
         <tbody sd-column-def-body></tbody>
         <tfoot sd-column-def-footer></tfoot>
       </table>
+      @if (tableModel().pagination) {
+        <sd-pagination></sd-pagination>
+      }
     </form>
   `,
   styles: `
@@ -52,7 +56,7 @@ export class SearchableDisplay {
   protected readonly displayForm = inject(FormBuilder).group({
     globalSearch: [''],
     visibilityGroup: [
-      this.tableStateService.tableState()?.tableModel.dataColumnVisibility
+      this.tableStateService.tableModel()?.dataColumnVisibility
         ?.defaultVisibilityGroup ?? 'all',
     ],
   });

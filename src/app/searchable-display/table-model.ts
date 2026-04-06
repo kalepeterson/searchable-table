@@ -16,9 +16,15 @@ export interface ColumnVisibilityOptions {
 	defaultVisibilityGroup?: 'all' | 'none' | string;
 }
 
-//TODO: Use generics for clickAction
 export interface ActionColumnDefinition {
-	header: string;
+	header?: string;
+	columnLocation?: 'start' | 'end';
+	actionButtonDefinitions: ActionButtonDefinition[];
+}
+
+//TODO: Use generics for clickAction
+export interface ActionButtonDefinition {
+	buttonText: string;
 	clickAction: (row: any) => Signal<any>;
 }
 
@@ -37,7 +43,6 @@ export interface TableModel {
 }
 
 export interface TableState {
-	tableModel: TableModel;
 	displayedData: any[];
 	visibleColumns: ColumnDefinition[];
 	currentPage?: number;

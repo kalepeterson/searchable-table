@@ -7,9 +7,16 @@ import { ColumnDefinition } from '../table-model';
 	imports: [],
 	template: `
 		@let tstate = tableState();
-		@if (tstate) {
+		@let tmodel = tableModel();
+		@if (tmodel && tstate) {
+			@for (actionColumn of startActionColumns(); track actionColumn) {
+				<th>{{ actionColumn.header }}</th>
+			}
 			@for (columnDef of tstate.visibleColumns; track columnDef) {
 				<th (click)="sortColumn(columnDef)">{{ columnDef.header }} <span class="sort-indicator">{{ columnSortDisplays().find(csd => csd.header === columnDef.header)?.display }}</span></th>
+			}
+			@for (actionColumn of endActionColumns(); track actionColumn) {
+				<th>{{ actionColumn.header }}</th>
 			}
 		}
 	`,
@@ -24,6 +31,23 @@ import { ColumnDefinition } from '../table-model';
 export class ColumnDefHeaders {
 	tableStateService = inject(SearchableDisplayState);
 	tableState = this.tableStateService.tableState;
+	tableModel = this.tableStateService.tableModel;
+
+	protected readonly startActionColumns = computed(() => {
+		const tmodel = this.tableModel();
+		if (tmodel?.actionColumns) {
+			return tmodel.actionColumns.filter(ac => ac.columnLocation === 'start');
+		}
+		return [];
+	});
+
+	protected readonly endActionColumns = computed(() => {
+		const tmodel = this.tableModel();
+		if (tmodel?.actionColumns) {
+			return tmodel.actionColumns.filter(ac => ac.columnLocation === 'end');
+		}
+		return [];
+	});
 
 	protected readonly columnSortDisplays = computed(() => {
 		const tstate = this.tableState();

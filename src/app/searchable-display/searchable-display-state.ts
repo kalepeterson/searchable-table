@@ -6,10 +6,11 @@ import { ColumnDefinition, ColumnSearchTerm, TableModel, TableState } from './ta
 })
 export class SearchableDisplayState {
 	tableState = signal<TableState | undefined>(undefined);
+	tableModel = signal<TableModel | undefined>(undefined);
 
 	initializeTableState(tableModel: TableModel): void {
+		this.tableModel.set(tableModel);
 		let nextState: TableState = {
-			tableModel,
 			displayedData: tableModel.data,
 			visibleColumns: [],
 			currentPage: tableModel.pagination ? 1 : undefined,
@@ -31,12 +32,19 @@ export class SearchableDisplayState {
 		}
 	}
 
-	performColumnQueries(columnSearches: ColumnSearchTerm[]): void {
+	updateColumnSearchTerm(columnSearchTerm: ColumnSearchTerm): void {
 		const tableStateRef = this.tableState();
 		if (tableStateRef) {
+			const existingTerms = tableStateRef.columnSearchTerms ?? [];
+			const existingTermIndex = existingTerms.findIndex(term => term.columnHeader === columnSearchTerm.columnHeader);
+			if (existingTermIndex !== -1) {
+				existingTerms[existingTermIndex] = columnSearchTerm;
+			} else {
+				existingTerms.push(columnSearchTerm);
+			}
 			const nextState = {
 				...tableStateRef,
-				columnSearchTerms: columnSearches,
+				columnSearchTerms: existingTerms,
 			};
 			this.runDataPipeline(nextState);
 		}
@@ -75,9 +83,13 @@ export class SearchableDisplayState {
 		if (!currentState) {
 			return;
 		}
+		let tableModel = this.tableModel();
+		if (!tableModel) {
+			return;
+		}
 
 		const visibleColumns = this.determineVisibleColumns(updatedState);
-		let filteredData = [...currentState.tableModel.data];
+		let filteredData = [...tableModel.data];
 
 		let globalSearchValue = updatedState.globalSearchTerm ?? currentState.globalSearchTerm ?? '';
 		if (globalSearchValue) {
@@ -150,40 +162,26 @@ export class SearchableDisplayState {
 		return cellValue.toLocaleLowerCase().includes(query.toLocaleLowerCase());
 	}
 
-	private tableStateAltered(currentState: TableState, newDisplayedData: any[]): boolean {
-		if (!currentState || !currentState.displayedData) {
-			return true;
-		}
-		if (currentState.displayedData.length !== newDisplayedData.length) {
-			return true;
-		}
-		for (let i = 0; i < currentState.displayedData.length; i++) {
-			if (currentState.displayedData[i] !== newDisplayedData[i]) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	private determineVisibleColumns(tableState: TableState): ColumnDefinition[] {
-		if (!tableState) {
+		let tableModel = this.tableModel();
+		if (!tableState || !tableModel) {
 			return [];
 		}
 		const visibilityGroup =
 			tableState.visibilityGroup ??
-			(tableState.tableModel.dataColumnVisibility?.defaultVisibilityGroup || 'all');
-		if (!tableState.tableModel.dataColumnVisibility || visibilityGroup === 'all') {
-			return tableState.tableModel.dataColumns || [];
+			(tableModel.dataColumnVisibility?.defaultVisibilityGroup || 'all');
+		if (!tableModel.dataColumnVisibility || visibilityGroup === 'all') {
+			return tableModel.dataColumns || [];
 		}
 		if (visibilityGroup === 'none') {
 			return (
-				tableState.tableModel.dataColumnVisibility!.baseColumns ??
-				tableState.tableModel.dataColumns ??
+				tableModel.dataColumnVisibility!.baseColumns ??
+				tableModel.dataColumns ??
 				[]
 			);
 		}
 
-		const { baseColumns, visibilityGroups } = tableState.tableModel.dataColumnVisibility ?? {};
+		const { baseColumns, visibilityGroups } = tableModel.dataColumnVisibility ?? {};
 		if (visibilityGroups && visibilityGroups[visibilityGroup]) {
 			return [...baseColumns, ...visibilityGroups[visibilityGroup]];
 		}

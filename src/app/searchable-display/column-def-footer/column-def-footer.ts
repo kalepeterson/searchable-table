@@ -1,69 +1,97 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { SearchableDisplayState } from '../searchable-display-state';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { combineLatest, debounceTime, map } from 'rxjs';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { debounceTime, map, merge, range } from 'rxjs';
 import { ColumnSearchTerm } from '../table-model';
 
 @Component({
   selector: 'tfoot[sd-column-def-footer]',
   imports: [ReactiveFormsModule],
   template: `
-		@let tstate = this.tableStateService.tableState();
-		@if (tstate) {
+    @let tstate = this.tableStateService.tableState();
+    @if (tstate) {
       <tr>
+        @for (skip of startActionColumnSkips(); track skip) {
+          <td></td>
+        }
         @for (columnDef of tstate.visibleColumns; track columnDef) {
           <td>
             @if (columnDef.searchable) {
-              <input type="search" placeholder="Search column..." [formControl]="columnSearchControls()[columnDef.header]" />
+              @let controlMapping = columnSearchControls().find(c => c.header === columnDef.header);
+              @if (controlMapping) {
+                <input
+                  type="search"
+                  placeholder="Search column..."
+                  [formControl]="controlMapping.control"
+                />
+              }
             }
           </td>
         }
+        @for (skip of endActionColumnSkips(); track skip) {
+          <td></td>
+        }
       </tr>
     }
-	`,
+  `,
   styles: ``,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ColumnDefFooter {
   protected readonly tableStateService = inject(SearchableDisplayState);
 
-  protected readonly columnSearchControls = computed(() => {
-    const controls: { [key: string]: FormControl<string | null> } = {};
-    const tstate = this.tableStateService.tableState();
-    if (tstate) {
-      for (const columnDef of tstate.visibleColumns) {
-        if (columnDef.searchable) {
-          controls[columnDef.header] = new FormControl<string | null>('');
-        }
-      }
+  protected readonly startActionColumnSkips = computed(() => {
+    const tmodel = this.tableStateService.tableModel();
+    if (tmodel?.actionColumns) {
+      const numStartActions = tmodel.actionColumns.filter(ac => ac.columnLocation === 'start').length;
+      return [range(0, numStartActions)].flat();
     }
-    return controls;
+    return [];
   });
 
-  protected readonly columnSearchChange = toSignal(combineLatest(Object.entries(this.columnSearchControls())
-      .map(controlMapping => {
-        const [header, control] = controlMapping;
-        return control.valueChanges.pipe(
-          debounceTime(300),
-          map(value => {
-            return {
-              header: header,
-              searchTerm: value ?? '',
-            } as unknown as ColumnSearchTerm;
-          })
-        );
-    })
-  ));  
+    protected readonly endActionColumnSkips = computed(() => {
+    const tmodel = this.tableStateService.tableModel();
+    if (tmodel?.actionColumns) {
+      const numEndActions = tmodel.actionColumns.filter(ac => ac.columnLocation === 'end').length;
+      return [range(0, numEndActions)].flat();
+    }
+    return [];
+  });
+
+  protected readonly columnSearchControls = computed(() => {
+    const tmodel = this.tableStateService.tableModel();
+    if (tmodel) {
+      const searchControls = tmodel.dataColumns
+        .filter((colDef) => colDef.searchable)
+        .map((colDef) => {
+          return {
+            header: colDef.header,
+            control: new FormControl<string | null>(''),
+          };
+        });
+      return searchControls;
+    }
+    return [];
+  });
 
   constructor() {
-    // Subscribe to changes in column search controls and update the table state accordingly
     effect(() => {
-      const tstate = this.tableStateService.tableState();
-      const columnSearchChanges = this.columnSearchChange();
-      if (tstate && columnSearchChanges) {
-          this.tableStateService.performColumnQueries(columnSearchChanges);
-      }
+      merge(...this.columnSearchControls()
+        .map((controlMapping) => {
+          const { header, control } = controlMapping;
+          return control.valueChanges.pipe(
+            debounceTime(300),
+            map((value) => {
+              return {
+                columnHeader: header,
+                searchTerm: value ?? '',
+              } as ColumnSearchTerm;
+            }),
+          );
+        }),
+      ).subscribe((columnSearchTerm) => {
+        this.tableStateService.updateColumnSearchTerm(columnSearchTerm);
+      });
     });
   }
 }

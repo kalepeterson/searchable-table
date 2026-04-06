@@ -8,6 +8,7 @@ import {
   USER_COLUMN_DEFS_BASE,
   USER_COLUMN_DEFS_FULL,
 } from './models/user-column-defs';
+import { UserData } from './models/user';
 
 @Component({
   selector: 'app-root',
@@ -35,6 +36,48 @@ export class App {
         defaultVisibilityGroup: 'all',
       },
       globalSearchable: true,
+      actionColumns: [
+        {
+          header: 'Actions',
+          columnLocation: 'start',
+          actionButtonDefinitions: [
+            {
+              buttonText: 'View Details',
+              clickAction: (row: any) => {
+                var displayRow: UserData = row as UserData;
+                alert(`User details:\n${JSON.stringify(displayRow, null, 2)}`);
+                return signal(null);
+              },
+            },
+            {
+              buttonText: 'Email',
+              clickAction: (row: any) => {
+                var displayRow: UserData = row as UserData;
+                alert(`Send an email to:\n${displayRow.email}`);
+                return signal(null);
+              },
+            },
+          ],
+        },
+        {
+          header: 'Delete',
+          columnLocation: 'end',
+          actionButtonDefinitions: [
+            {
+              buttonText: '🗑',
+              clickAction: (row: any) => {
+                var displayRow: UserData = row as UserData;
+                alert(`Deleting user:\n${JSON.stringify(displayRow, null, 2)}`);
+                return signal(null);
+              },
+            },
+          ],
+        }
+      ],
+      pagination: {
+        pageSizeOptions: [5, 10, 13, 20],
+        pageButtons: ['all'],
+      },
     } as TableModel;
   });
 }
