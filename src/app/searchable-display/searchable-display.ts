@@ -7,7 +7,7 @@ import { SearchableDisplayState } from './searchable-display-state';
 import { ColumnDefFooter } from './column-def-footer/column-def-footer';
 import { debounceTime, switchMap } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Pagination } from "./pagination/pagination";
+import Pagination from './pagination/pagination';
 
 @Component({
   selector: 'sd-searchable-display',
@@ -34,9 +34,7 @@ import { Pagination } from "./pagination/pagination";
         <tbody sd-column-def-body></tbody>
         <tfoot sd-column-def-footer></tfoot>
       </table>
-      @if (tableModel().pagination) {
-        <sd-pagination></sd-pagination>
-      }
+      <sd-pagination></sd-pagination>
     </form>
   `,
   styles: `
@@ -56,8 +54,7 @@ export class SearchableDisplay {
   protected readonly displayForm = inject(FormBuilder).group({
     globalSearch: [''],
     visibilityGroup: [
-      this.tableStateService.tableModel()?.dataColumnVisibility
-        ?.defaultVisibilityGroup ?? 'all',
+      this.tableStateService.tableModel()?.dataColumnVisibility?.defaultVisibilityGroup ?? 'all',
     ],
   });
 
@@ -81,16 +78,16 @@ export class SearchableDisplay {
       if (tableModel.dataColumnVisibility!.allowHideAll) {
         specifiedGroups.push({ display: 'Hide All', value: 'none' });
       }
-      for (let group of Object.entries(
-        tableModel.dataColumnVisibility!.visibilityGroups ?? {},
-      )) {
+      for (let group of Object.entries(tableModel.dataColumnVisibility!.visibilityGroups ?? {})) {
         specifiedGroups.push({ display: group[0], value: group[0] });
       }
     }
     return specifiedGroups;
   });
 
-  protected readonly currentVisibilitySet = toSignal(this.displayForm.controls.visibilityGroup.valueChanges);
+  protected readonly currentVisibilitySet = toSignal(
+    this.displayForm.controls.visibilityGroup.valueChanges,
+  );
 
   constructor() {
     effect(() => this.tableStateService.initializeTableState(this.tableModel()));

@@ -75,7 +75,7 @@ export class App {
         }
       ],
       pagination: {
-        pageSizeOptions: [5, 10, 13, 20],
+        pageSizeOptions: [3, 4, 5, 7, 10, 13],
         pageButtons: ['all'],
       },
     } as TableModel;
