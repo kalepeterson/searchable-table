@@ -100,7 +100,7 @@ export default class Pagination {
   });
 
   protected readonly currentPage = computed(() => {
-    return this.tableState()?.currentPage;
+    return this.tableState()?.currentPage ?? 1;
   });
 
   protected readonly pageNumbers = computed(() => {
