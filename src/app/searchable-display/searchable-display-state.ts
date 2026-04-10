@@ -6,10 +6,11 @@ import { ColumnDefinition, ColumnSearchTerm, TableModel, TableState } from './ta
 })
 export class SearchableDisplayState {
 	tableState = signal<TableState | undefined>(undefined);
+	tableModel = signal<TableModel | undefined>(undefined);
 
 	initializeTableState(tableModel: TableModel): void {
+		this.tableModel.set(tableModel);
 		let nextState: TableState = {
-			tableModel,
 			displayedData: tableModel.data,
 			visibleColumns: [],
 			currentPage: tableModel.pagination ? 1 : undefined,
@@ -23,30 +24,40 @@ export class SearchableDisplayState {
 	globalQuery(query: string | null | undefined): void {
 		const queryString = query ?? '';
 		if (this.tableState() && this.tableState()?.globalSearchTerm !== queryString) {
-			this.filterDataPipeline({ globalSearchTerm: queryString });
+			const nextState = {
+				...this.tableState()!,
+				globalSearchTerm: queryString,
+			};
+			this.runDataPipeline(nextState);
 		}
 	}
 
-	performColumnQueries(columnSearches: ColumnSearchTerm[]): void {
+	updateColumnSearchTerm(columnSearchTerm: ColumnSearchTerm): void {
 		const tableStateRef = this.tableState();
 		if (tableStateRef) {
-			this.filterDataPipeline({ columnSearchTerms: columnSearches });
+			const existingTerms = tableStateRef.columnSearchTerms ?? [];
+			const existingTermIndex = existingTerms.findIndex(term => term.columnHeader === columnSearchTerm.columnHeader);
+			if (existingTermIndex !== -1) {
+				existingTerms[existingTermIndex] = columnSearchTerm;
+			} else {
+				existingTerms.push(columnSearchTerm);
+			}
+			const nextState = {
+				...tableStateRef,
+				columnSearchTerms: existingTerms,
+			};
+			this.runDataPipeline(nextState);
 		}
 	}
 
 	setVisibilityGroup(groupName: string): void {
-		if (this.tableState() && this.tableState()!.visibilityGroup !== groupName) {
+		var currentState = this.tableState();
+		if (currentState && currentState.visibilityGroup !== groupName) {
 			const nextState = {
-				...this.tableState()!,
+				...currentState,
 				visibilityGroup: groupName,
 			};
-
-			const visibleColumns = this.determineVisibleColumns(nextState);
-			nextState.visibleColumns = visibleColumns;
-
-			this.tableState.set(nextState);
-
-			this.filterDataPipeline({});
+			this.runDataPipeline(nextState);
 		}
 	}
 
@@ -57,42 +68,42 @@ export class SearchableDisplayState {
 			if (tstate.sortColumn === columnDef.header) {
 				nextSortDirection = tstate.sortDirection === 'asc' ? 'desc' : 'asc';
 			}
+			
 			const nextState = {
 				...tstate,
 				sortColumn: columnDef.header,
-				sortDirection: nextSortDirection,
+				sortDirection: nextSortDirection
 			};
-			this.tableState.set(nextState);
+			this.runDataPipeline(nextState);
 		}
 	}
 
-	private filterDataPipeline({
-		globalSearchTerm,
-		columnSearchTerms,
-	}: {
-		globalSearchTerm?: string;
-		columnSearchTerms?: ColumnSearchTerm[];
-	}): void {
+	private runDataPipeline(updatedState: TableState): void {
 		let currentState = this.tableState();
 		if (!currentState) {
 			return;
 		}
+		let tableModel = this.tableModel();
+		if (!tableModel) {
+			return;
+		}
 
-		let filteredData = currentState.tableModel.data;
+		const visibleColumns = this.determineVisibleColumns(updatedState);
+		let filteredData = [...tableModel.data];
 
-		let globalSearchValue = globalSearchTerm ?? currentState.globalSearchTerm ?? '';
+		let globalSearchValue = updatedState.globalSearchTerm ?? currentState.globalSearchTerm ?? '';
 		if (globalSearchValue) {
 			filteredData = this.queryDisplayedColumns(
 				filteredData,
-				currentState.visibleColumns,
+				visibleColumns,
 				globalSearchValue,
 			);
 		}
 
-		let columnSearchTermsObj = columnSearchTerms ?? currentState.columnSearchTerms;
+		let columnSearchTermsObj = updatedState.columnSearchTerms ?? currentState.columnSearchTerms;
 		if (columnSearchTermsObj) {
 			for (let columnSearchTerm of columnSearchTermsObj) {
-				let columnDef = currentState.visibleColumns.find(
+				let columnDef = visibleColumns.find(
 					(col) => col.header === columnSearchTerm.columnHeader,
 				);
 				if (columnDef && columnSearchTerm.searchTerm) {
@@ -105,15 +116,28 @@ export class SearchableDisplayState {
 			}
 		}
 
-		if (this.tableStateAltered(currentState, filteredData)) {
-			// Table state altered, updating displayed data
-			this.tableState.set({
-				...currentState,
-				displayedData: filteredData,
-				globalSearchTerm,
-				columnSearchTerms: columnSearchTermsObj,
+		const sortColumn = updatedState.sortColumn ?? currentState.sortColumn;
+		const sortDirection = updatedState.sortDirection ?? currentState.sortDirection;
+		const sortColumnDef = visibleColumns.find(col => col.header === sortColumn);
+		if (sortColumnDef && sortDirection) {
+			filteredData.sort((a, b) => {
+				const aValue = sortColumnDef.valueDisplayMapper(a);
+				const bValue = sortColumnDef.valueDisplayMapper(b);
+				const comparison = aValue.localeCompare(bValue);
+				return sortDirection === 'asc' ? comparison : comparison * -1;
 			});
 		}
+
+		this.tableState.set({
+			...currentState,
+			visibilityGroup: updatedState.visibilityGroup,
+			visibleColumns,
+			displayedData: filteredData,
+			globalSearchTerm: globalSearchValue,
+			columnSearchTerms: columnSearchTermsObj,
+			sortColumn,
+			sortDirection,
+		});
 	}
 
 	private queryDisplayedColumns(data: any[], columns: ColumnDefinition[], query: string): any[] {
@@ -138,40 +162,26 @@ export class SearchableDisplayState {
 		return cellValue.toLocaleLowerCase().includes(query.toLocaleLowerCase());
 	}
 
-	private tableStateAltered(currentState: TableState, newDisplayedData: any[]): boolean {
-		if (!currentState || !currentState.displayedData) {
-			return true;
-		}
-		if (currentState.displayedData.length !== newDisplayedData.length) {
-			return true;
-		}
-		for (let i = 0; i < currentState.displayedData.length; i++) {
-			if (currentState.displayedData[i] !== newDisplayedData[i]) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	private determineVisibleColumns(tableState: TableState): ColumnDefinition[] {
-		if (!tableState) {
+		let tableModel = this.tableModel();
+		if (!tableState || !tableModel) {
 			return [];
 		}
 		const visibilityGroup =
 			tableState.visibilityGroup ??
-			(tableState.tableModel.dataColumnVisibility?.defaultVisibilityGroup || 'all');
-		if (!tableState.tableModel.dataColumnVisibility || visibilityGroup === 'all') {
-			return tableState.tableModel.dataColumns || [];
+			(tableModel.dataColumnVisibility?.defaultVisibilityGroup || 'all');
+		if (!tableModel.dataColumnVisibility || visibilityGroup === 'all') {
+			return tableModel.dataColumns || [];
 		}
 		if (visibilityGroup === 'none') {
 			return (
-				tableState.tableModel.dataColumnVisibility!.baseColumns ??
-				tableState.tableModel.dataColumns ??
+				tableModel.dataColumnVisibility!.baseColumns ??
+				tableModel.dataColumns ??
 				[]
 			);
 		}
 
-		const { baseColumns, visibilityGroups } = tableState.tableModel.dataColumnVisibility ?? {};
+		const { baseColumns, visibilityGroups } = tableModel.dataColumnVisibility ?? {};
 		if (visibilityGroups && visibilityGroups[visibilityGroup]) {
 			return [...baseColumns, ...visibilityGroups[visibilityGroup]];
 		}

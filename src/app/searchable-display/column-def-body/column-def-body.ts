@@ -1,16 +1,31 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { SearchableDisplayState } from '../searchable-display-state';
 
 @Component({
 	selector: 'tbody[sd-column-def-body]',
 	imports: [],
 	template: `
-		@let tstate = tableState();
-		@if (tstate) {
-			@for (row of tstate.displayedData; track row) {
+		@let tableState = this.tableState();
+		@let tableModel = this.tableModel();
+		@if (tableState && tableModel) {
+			@for (row of tableState.displayedData; track row.id) {
 				<tr>
-				@for (columnDef of tstate.visibleColumns; track columnDef) {
+					@for (actionColumn of startActions(); track actionColumn) {
+						<td>
+							@for (actionButton of actionColumn.actionButtonDefinitions; track actionButton) {
+								<a href="#" role="button" (click)="actionButton.clickAction(row)()">{{ actionButton.buttonText }}</a>
+							}
+						</td>
+					}
+				@for (columnDef of tableState.visibleColumns; track columnDef) {
 					<td>{{ columnDef.valueDisplayMapper(row) }}</td>
+				}
+				@for (actionColumn of endActions(); track actionColumn) {
+					<td>
+						@for (actionButton of actionColumn.actionButtonDefinitions; track actionButton) {
+							<a href="#" role="button" (click)="actionButton.clickAction(row)()">{{ actionButton.buttonText }}</a>
+						}
+					</td>
 				}
 				</tr>
 			}
@@ -20,5 +35,9 @@ import { SearchableDisplayState } from '../searchable-display-state';
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ColumnDefBody {
-	protected readonly tableState = inject(SearchableDisplayState).tableState;
+	protected readonly tableStateService = inject(SearchableDisplayState);
+	protected readonly tableState = this.tableStateService.tableState;
+	protected readonly tableModel = this.tableStateService.tableModel;
+	protected readonly startActions = computed(() => this.tableModel()?.actionColumns?.filter(ac => ac.columnLocation === 'start') ?? []);
+	protected readonly endActions = computed(() => this.tableModel()?.actionColumns?.filter(ac => ac.columnLocation === 'end') ?? []);
 }
