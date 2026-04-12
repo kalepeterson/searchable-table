@@ -1,31 +1,29 @@
 import { Signal } from '@angular/core';
 
-//TODO: Use generics for valueDisplayMapper
-export interface ColumnDefinition {
+export interface ColumnDefinition<T = any> {
   header: string;
   searchable: boolean;
   sortable: boolean;
-  valueDisplayMapper: (row: any) => string;
+  valueDisplayMapper: (row: T) => string;
 }
 
-export interface ColumnVisibilityOptions {
+export interface ColumnVisibilityOptions<T = any> {
   allowShowAll?: boolean;
   allowHideAll?: boolean;
-  baseColumns: ColumnDefinition[];
-  visibilityGroups?: { [groupName: string]: ColumnDefinition[] };
+  baseColumns: ColumnDefinition<T>[];
+  visibilityGroups?: { [groupName: string]: ColumnDefinition<T>[] };
   defaultVisibilityGroup?: 'all' | 'none' | string;
 }
 
-export interface ActionColumnDefinition {
+export interface ActionColumnDefinition<T = any> {
   header?: string;
   columnLocation?: 'start' | 'end';
-  actionButtonDefinitions: ActionButtonDefinition[];
+  actionButtonDefinitions: ActionButtonDefinition<T>[];
 }
 
-//TODO: Use generics for clickAction
-export interface ActionButtonDefinition {
+export interface ActionButtonDefinition<T = any> {
   buttonText: string;
-  clickAction: (row: any) => Signal<any>;
+  clickAction: (row: T) => Signal<any>;
 }
 
 export interface PaginationOptions {
@@ -33,19 +31,19 @@ export interface PaginationOptions {
   pageButtons: ('all' | 'first-last' | 'next-previous')[];
 }
 
-export interface TableModel {
-  actionColumns?: ActionColumnDefinition[];
-  dataColumns: ColumnDefinition[];
-  data: any[];
+export interface TableModel<T = any> {
+  actionColumns?: ActionColumnDefinition<T>[];
+  dataColumns: ColumnDefinition<T>[];
+  data: T[];
   pagination?: PaginationOptions;
   globalSearchable?: boolean;
-  dataColumnVisibility?: ColumnVisibilityOptions;
+  dataColumnVisibility?: ColumnVisibilityOptions<T>;
 }
 
-export interface TableState {
-  displayedData: any[];
-  filteredData: any[];
-  visibleColumns: ColumnDefinition[];
+export interface TableState<T = any> {
+  displayedData: T[];
+  filteredData: T[];
+  visibleColumns: ColumnDefinition<T>[];
   currentPage?: number;
   pageSize?: number;
   globalSearchTerm?: string;

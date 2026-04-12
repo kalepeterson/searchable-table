@@ -26,7 +26,7 @@ export class App {
 
   protected readonly userTableModel = computed(() => {
     return {
-      data: this.users(),
+      data: [...this.users()],
       dataColumns: USER_COLUMN_DEFS_FULL,
       dataColumnVisibility: {
         allowShowAll: true,
@@ -43,17 +43,15 @@ export class App {
           actionButtonDefinitions: [
             {
               buttonText: 'View Details',
-              clickAction: (row: any) => {
-                var displayRow: UserData = row as UserData;
-                alert(`User details:\n${JSON.stringify(displayRow, null, 2)}`);
+              clickAction: (row: UserData) => {
+                alert(`User details:\n${JSON.stringify(row, null, 2)}`);
                 return signal(null);
               },
             },
             {
               buttonText: 'Email',
-              clickAction: (row: any) => {
-                var displayRow: UserData = row as UserData;
-                alert(`Send an email to:\n${displayRow.email}`);
+              clickAction: (row: UserData) => {
+                alert(`Send an email to:\n${row.email}`);
                 return signal(null);
               },
             },
@@ -65,19 +63,18 @@ export class App {
           actionButtonDefinitions: [
             {
               buttonText: '🗑',
-              clickAction: (row: any) => {
-                var displayRow: UserData = row as UserData;
-                alert(`Deleting user:\n${JSON.stringify(displayRow, null, 2)}`);
+              clickAction: (row: UserData) => {
+                alert(`Deleting user:\n${JSON.stringify(row, null, 2)}`);
                 return signal(null);
               },
             },
           ],
-        }
+        },
       ],
       pagination: {
         pageSizeOptions: [3, 4, 5, 7, 10, 13],
         pageButtons: ['all'],
       },
-    } as TableModel;
+    } as TableModel<UserData>;
   });
 }
