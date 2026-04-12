@@ -165,6 +165,9 @@ export class SearchableDisplayState {
       if (updatedPage > totalPages) {
         updatedPage = totalPages;
       }
+      if (updatedPage < 1) {
+        updatedPage = 1;
+      }
     }
     const displayedData = this.paginateData(filteredData, updatedPage, pageSize);
 
