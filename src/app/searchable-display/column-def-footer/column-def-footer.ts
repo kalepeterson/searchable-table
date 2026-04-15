@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { SearchableDisplayState } from '../searchable-display-state';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { debounceTime, map, merge, range } from 'rxjs';
+import { debounceTime, map, merge } from 'rxjs';
 import { ColumnSearchTerm } from '../table-model';
 
 @Component({
@@ -44,7 +44,7 @@ export class ColumnDefFooter {
     const tmodel = this.tableStateService.tableModel();
     if (tmodel?.actionColumns) {
       const numStartActions = tmodel.actionColumns.filter(ac => ac.columnLocation === 'start').length;
-      return [range(0, numStartActions)].flat();
+      return [...Array(numStartActions).keys()];
     }
     return [];
   });
@@ -53,7 +53,7 @@ export class ColumnDefFooter {
     const tmodel = this.tableStateService.tableModel();
     if (tmodel?.actionColumns) {
       const numEndActions = tmodel.actionColumns.filter(ac => ac.columnLocation === 'end').length;
-      return [range(0, numEndActions)].flat();
+      return [...Array(numEndActions).keys()];
     }
     return [];
   });

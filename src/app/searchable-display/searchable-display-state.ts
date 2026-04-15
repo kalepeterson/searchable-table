@@ -11,8 +11,9 @@ export class SearchableDisplayState {
   initializeTableState(tableModel: TableModel): void {
     this.tableModel.set(tableModel);
     let nextState: TableState = {
-      displayedData: tableModel.data,
-      filteredData: tableModel.data,
+      data: [],
+      displayedData: [],
+      filteredData: [],
       visibleColumns: [],
       currentPage: undefined,
       pageSize: undefined,
@@ -20,12 +21,18 @@ export class SearchableDisplayState {
     nextState.visibleColumns = this.determineVisibleColumns(nextState);
     nextState.currentPage = tableModel.pagination ? 1 : undefined;
     nextState.pageSize = tableModel.pagination?.pageSizeOptions?.[0] ?? undefined;
-    nextState.displayedData = this.paginateData(
-      nextState.filteredData,
-      nextState.currentPage,
-      nextState.pageSize,
-    );
     this.tableState.set(nextState);
+  }
+
+  patchDataRows(dataRows: any[]): void {
+    const currentState = this.tableState();
+    if (currentState) {
+      const nextState = {
+        ...currentState,
+        data: [...dataRows],
+      };
+      this.runDataPipeline(nextState);
+    }
   }
 
   globalQuery(query: string | null | undefined): void {
@@ -117,7 +124,7 @@ export class SearchableDisplayState {
     }
 
     const visibleColumns = this.determineVisibleColumns(updatedState);
-    let filteredData = [...tableModel.data];
+    let filteredData = [...updatedState.data];
 
     let globalSearchValue = updatedState.globalSearchTerm ?? currentState.globalSearchTerm ?? '';
     if (globalSearchValue) {
@@ -173,6 +180,7 @@ export class SearchableDisplayState {
 
     this.tableState.set({
       ...currentState,
+      data: updatedState.data,
       visibilityGroup: updatedState.visibilityGroup,
       visibleColumns,
       displayedData,

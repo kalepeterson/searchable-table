@@ -46,6 +46,7 @@ import Pagination from './pagination/pagination';
 })
 export class SearchableDisplay {
   tableModel = input.required<TableModel>();
+  dataRows = input.required<any[]>();
   title = input<string>();
   tableStyleClasses = input<string[]>();
 
@@ -89,8 +90,28 @@ export class SearchableDisplay {
     this.displayForm.controls.visibilityGroup.valueChanges,
   );
 
+  protected readonly dataRowChangeDetected = computed(() => {
+    const currentTableState = this.tableStateService.tableState();
+    const tableModel = this.tableModel();
+    const dataRows = this.dataRows();
+    if (!currentTableState) {
+      return false;
+    }
+
+    return dataRows.length !== currentTableState.data.length
+      || dataRows.some((row, index) => tableModel.rowIdentifier(row) !== tableModel.rowIdentifier(currentTableState.data[index]));
+  });
+
   constructor() {
-    effect(() => this.tableStateService.initializeTableState(this.tableModel()));
+    effect(() => {
+      const tableState = this.tableStateService.tableState();
+      if (!tableState) {
+        this.tableStateService.initializeTableState(this.tableModel());
+        this.tableStateService.patchDataRows(this.dataRows());
+      } else if (this.dataRowChangeDetected()) {
+        this.tableStateService.patchDataRows(this.dataRows());
+      }
+    });
     effect(() => {
       let currentGlobalSearchValue = this.globalSearchValue() ?? '';
       this.tableStateService.globalQuery(currentGlobalSearchValue);

@@ -31,16 +31,17 @@ export interface PaginationOptions {
   pageButtons: ('all' | 'first-last' | 'next-previous')[];
 }
 
-export interface TableModel<T = any> {
+export class TableModel<T = any> {
   actionColumns?: ActionColumnDefinition<T>[];
-  dataColumns: ColumnDefinition<T>[];
-  data: T[];
+  dataColumns: ColumnDefinition<T>[] = [];
+  rowIdentifier: (row: T) => string = (row) => JSON.stringify(row);
   pagination?: PaginationOptions;
   globalSearchable?: boolean;
   dataColumnVisibility?: ColumnVisibilityOptions<T>;
 }
 
 export interface TableState<T = any> {
+  data: T[];
   displayedData: T[];
   filteredData: T[];
   visibleColumns: ColumnDefinition<T>[];

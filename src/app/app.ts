@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SearchableDisplay } from './searchable-display/searchable-display';
 import { UserPlaceholderService } from './services/user-placeholder';
@@ -15,18 +15,50 @@ import { UserData } from './models/user';
   imports: [RouterOutlet, SearchableDisplay],
   template: `
     <h1>Searchable Table Demo</h1>
-    <sd-searchable-display title="Users" [tableModel]="userTableModel()"></sd-searchable-display>
+    <fieldset>
+      <legend>Table Actions</legend>
+      <button (click)="refreshData()">Refresh Data</button>
+      <button (click)="addUser()">Generate Random User</button>
+    </fieldset>
+    <sd-searchable-display title="Users" [dataRows]="userData()" [tableModel]="userTableModel()"></sd-searchable-display>
     <router-outlet />
   `,
   styles: ``,
 })
 export class App {
   protected readonly title = signal('Searchable Table');
-  protected readonly users = inject(UserPlaceholderService).users;
+  protected readonly usersService = inject(UserPlaceholderService);
+
+  protected readonly updateTrigger = signal(0);
+
+  protected readonly refreshData = () => {
+    this.updateTrigger.set(this.updateTrigger() + 1);
+  }
+
+  protected readonly users = computed(() => {
+    const trigger = this.updateTrigger(); // Value doesn't matter, just used to trigger recomputation when refreshData is called
+    return [...this.usersService.users()];
+  });
+
+  protected readonly userData = linkedSignal(() => {
+    return [...this.users()];
+  });
+
+  addUser() {
+    const users = this.userData();
+    let randomNewUser: UserData = this.usersService.generateRandomUser();
+    this.userData.set([...users, randomNewUser]);
+  }
+
+  removeUser(userId: number) {
+    const users = this.userData();
+    this.userData.set(users.filter(u => u.id !== userId));
+  }
 
   protected readonly userTableModel = computed(() => {
+    var tableModel = new TableModel<UserData>();
     return {
-      data: [...this.users()],
+      ...tableModel,
       dataColumns: USER_COLUMN_DEFS_FULL,
       dataColumnVisibility: {
         allowShowAll: true,
@@ -64,7 +96,9 @@ export class App {
             {
               buttonText: '🗑',
               clickAction: (row: UserData) => {
-                alert(`Deleting user:\n${JSON.stringify(row, null, 2)}`);
+                if (confirm(`Are you sure you want to delete user "${row.name}"?`)) {
+                  this.removeUser(row.id);
+                }
                 return signal(null);
               },
             },
@@ -72,7 +106,7 @@ export class App {
         },
       ],
       pagination: {
-        pageSizeOptions: [3, 4, 5, 7, 10, 13],
+        pageSizeOptions: [3, 5, 10, 13],
         pageButtons: ['all'],
       },
     } as TableModel<UserData>;
