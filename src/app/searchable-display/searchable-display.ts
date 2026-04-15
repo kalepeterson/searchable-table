@@ -12,6 +12,7 @@ import Pagination from './pagination/pagination';
 @Component({
   selector: 'sd-searchable-display',
   imports: [ReactiveFormsModule, ColumnDefHeaders, ColumnDefBody, ColumnDefFooter, Pagination],
+  providers: [SearchableDisplayState],
   template: `
     <form [formGroup]="displayForm">
       @if (title()) {

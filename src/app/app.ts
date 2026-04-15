@@ -3,12 +3,8 @@ import { RouterOutlet } from '@angular/router';
 import { SearchableDisplay } from './searchable-display/searchable-display';
 import { UserPlaceholderService } from './services/user-placeholder';
 import { TableModel } from './searchable-display/table-model';
-import {
-  USER_COLUMN_DEFINITIONS_OPTIONS,
-  USER_COLUMN_DEFS_BASE,
-  USER_COLUMN_DEFS_FULL,
-} from './models/user-column-defs';
 import { UserData } from './models/user';
+import { USER_BASE_TABLE_MODEL_FULL, USER_BASE_TABLE_MODEL_PLAIN } from './models/user-table-model';
 
 @Component({
   selector: 'app-root',
@@ -20,7 +16,9 @@ import { UserData } from './models/user';
       <button (click)="refreshData()">Refresh Data</button>
       <button (click)="addUser()">Generate Random User</button>
     </fieldset>
-    <sd-searchable-display title="Users" [dataRows]="userData()" [tableModel]="userTableModel()"></sd-searchable-display>
+    <sd-searchable-display title="Users" [dataRows]="userData()" [tableModel]="userTableModel"></sd-searchable-display>
+    <h2>Another one</h2>
+    <sd-searchable-display title="Users (Plain Model)" [dataRows]="simpleUserData()" [tableModel]="simpleTableModel"></sd-searchable-display>
     <router-outlet />
   `,
   styles: ``,
@@ -28,6 +26,8 @@ import { UserData } from './models/user';
 export class App {
   protected readonly title = signal('Searchable Table');
   protected readonly usersService = inject(UserPlaceholderService);
+  protected readonly baseTableModel = inject(USER_BASE_TABLE_MODEL_FULL);
+  protected readonly simpleTableModel = inject(USER_BASE_TABLE_MODEL_PLAIN);
 
   protected readonly updateTrigger = signal(0);
 
@@ -44,6 +44,10 @@ export class App {
     return [...this.users()];
   });
 
+  protected readonly simpleUserData = computed(() => {
+    return [...this.users()];
+  });
+
   addUser() {
     const users = this.userData();
     let randomNewUser: UserData = this.usersService.generateRandomUser();
@@ -55,60 +59,44 @@ export class App {
     this.userData.set(users.filter(u => u.id !== userId));
   }
 
-  protected readonly userTableModel = computed(() => {
-    var tableModel = new TableModel<UserData>();
-    return {
-      ...tableModel,
-      dataColumns: USER_COLUMN_DEFS_FULL,
-      dataColumnVisibility: {
-        allowShowAll: true,
-        allowHideAll: true,
-        baseColumns: USER_COLUMN_DEFS_BASE,
-        visibilityGroups: USER_COLUMN_DEFINITIONS_OPTIONS,
-        defaultVisibilityGroup: 'all',
-      },
-      globalSearchable: true,
+  protected readonly userTableModel: TableModel<UserData> = {
+      ...this.baseTableModel,
       actionColumns: [
-        {
-          header: 'Actions',
-          columnLocation: 'start',
-          actionButtonDefinitions: [
-            {
-              buttonText: 'View Details',
-              clickAction: (row: UserData) => {
-                alert(`User details:\n${JSON.stringify(row, null, 2)}`);
-                return signal(null);
-              },
+      {
+        header: 'Actions',
+        columnLocation: 'start',
+        actionButtonDefinitions: [
+          {
+            buttonText: 'View Details',
+            clickAction: (row: UserData) => {
+              alert(`User details:\n${JSON.stringify(row, null, 2)}`);
+              return signal(null);
             },
-            {
-              buttonText: 'Email',
-              clickAction: (row: UserData) => {
-                alert(`Send an email to:\n${row.email}`);
-                return signal(null);
-              },
+          },
+          {
+            buttonText: 'Email',
+            clickAction: (row: UserData) => {
+              alert(`Send an email to:\n${row.email}`);
+              return signal(null);
             },
-          ],
-        },
-        {
-          header: 'Delete',
-          columnLocation: 'end',
-          actionButtonDefinitions: [
-            {
-              buttonText: '🗑',
-              clickAction: (row: UserData) => {
-                if (confirm(`Are you sure you want to delete user "${row.name}"?`)) {
-                  this.removeUser(row.id);
-                }
-                return signal(null);
-              },
-            },
-          ],
-        },
-      ],
-      pagination: {
-        pageSizeOptions: [3, 5, 10, 13],
-        pageButtons: ['all'],
+          },
+        ],
       },
-    } as TableModel<UserData>;
-  });
+      {
+        header: 'Delete',
+        columnLocation: 'end',
+        actionButtonDefinitions: [
+          {
+            buttonText: '🗑',
+            clickAction: (row: UserData) => {
+              if (confirm(`Are you sure you want to delete user "${row.name}"?`)) {
+                this.removeUser(row.id);
+              }
+              return signal(null);
+            },
+          },
+        ],
+      },
+    ],
+  };
 }

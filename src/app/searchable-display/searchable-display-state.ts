@@ -1,9 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { ColumnDefinition, ColumnSearchTerm, TableModel, TableState } from './table-model';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable()
 export class SearchableDisplayState {
   tableState = signal<TableState | undefined>(undefined);
   tableModel = signal<TableModel | undefined>(undefined);
