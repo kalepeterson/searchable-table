@@ -1,10 +1,11 @@
 import { Injectable, signal } from '@angular/core';
-import { ColumnDefinition, ColumnSearchTerm, TableModel, TableState } from './table-model';
+import { ColumnDefinition, ColumnSearchTerm, TableModel, TableState, TableStyleDefinition } from './table-model';
 
 @Injectable()
 export class SearchableDisplayState {
   tableState = signal<TableState | undefined>(undefined);
   tableModel = signal<TableModel | undefined>(undefined);
+  tableStyles = signal<TableStyleDefinition | undefined>(undefined);
 
   initializeTableState(tableModel: TableModel): void {
     this.tableModel.set(tableModel);
@@ -20,6 +21,10 @@ export class SearchableDisplayState {
     nextState.currentPage = tableModel.pagination ? 1 : undefined;
     nextState.pageSize = tableModel.pagination?.pageSizeOptions?.[0] ?? undefined;
     this.tableState.set(nextState);
+  }
+
+  setTableStyles(tableStyles: TableStyleDefinition): void {
+    this.tableStyles.set(tableStyles);
   }
 
   patchDataRows(dataRows: any[]): void {

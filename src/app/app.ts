@@ -2,7 +2,7 @@ import { Component, computed, inject, linkedSignal, signal } from '@angular/core
 import { RouterOutlet } from '@angular/router';
 import { SearchableDisplay } from './searchable-display/searchable-display';
 import { UserPlaceholderService } from './services/user-placeholder';
-import { TableModel } from './searchable-display/table-model';
+import { TableModel, TableStyleDefinition } from './searchable-display/table-model';
 import { UserData } from './models/user';
 import { USER_BASE_TABLE_MODEL_FULL, USER_BASE_TABLE_MODEL_PLAIN } from './models/user-table-model';
 
@@ -16,9 +16,9 @@ import { USER_BASE_TABLE_MODEL_FULL, USER_BASE_TABLE_MODEL_PLAIN } from './model
       <button (click)="refreshData()">Refresh Data</button>
       <button (click)="addUser()">Generate Random User</button>
     </fieldset>
-    <sd-searchable-display title="Users" [dataRows]="userData()" [tableModel]="userTableModel"></sd-searchable-display>
+    <sd-searchable-display title="Users" [dataRows]="userData()" [tableModel]="userTableModel" [tableStyle]="userTableStyles"></sd-searchable-display>
     <h2>Another one</h2>
-    <sd-searchable-display title="Users (Plain Model)" [dataRows]="simpleUserData()" [tableModel]="simpleTableModel"></sd-searchable-display>
+    <sd-searchable-display title="Users (Plain Model)" [dataRows]="simpleUserData()" [tableModel]="simpleTableModel" [tableStyle]="userTableStyles"></sd-searchable-display>
     <router-outlet />
   `,
   styles: ``,
@@ -28,15 +28,34 @@ export class App {
   protected readonly usersService = inject(UserPlaceholderService);
   protected readonly baseTableModel = inject(USER_BASE_TABLE_MODEL_FULL);
   protected readonly simpleTableModel = inject(USER_BASE_TABLE_MODEL_PLAIN);
-
-  protected readonly updateTrigger = signal(0);
+  protected readonly userTableStyles: TableStyleDefinition = {
+    tableClasses: 'user-table',
+    headerClasses: 'user-table-header',
+    bodyClasses: 'user-table-body',
+    footerClasses: 'user-table-footer',
+    paginationClasses: {
+      pageButtonClasses: 'user-table-page-button secondary',
+      pageSizeDropdownClasses: 'user-table-page-size-dropdown',
+      activePageButtonClasses: 'user-table-active-page primary',
+      showPageSizeLabel: true,
+    },
+    actionCellClasses: (row: UserData, actionButton) => {
+      let classes = '';
+      if (actionButton.buttonText === 'View Details') {
+        classes += 'view-details-button ';
+      }
+      if (actionButton.buttonText === 'Email') {
+        classes += 'email-button ';
+      }
+      return classes;
+    },
+  };
 
   protected readonly refreshData = () => {
-    this.updateTrigger.set(this.updateTrigger() + 1);
+    this.usersService.refreshUsers();
   }
 
   protected readonly users = computed(() => {
-    const trigger = this.updateTrigger(); // Value doesn't matter, just used to trigger recomputation when refreshData is called
     return [...this.usersService.users()];
   });
 

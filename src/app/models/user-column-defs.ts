@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { ColumnDefinition } from '../searchable-display/table-model';
 import { UserData } from './user';
 
@@ -13,6 +14,15 @@ export const USER_COLUMN_DEFS_BASE: ColumnDefinition<UserData>[] = [
     searchable: true,
     sortable: true,
     valueDisplayMapper: (row: UserData) => row?.name ?? '',
+    cellActionButtons: [
+      {
+        buttonText: '📋 Copy',
+        clickAction: (row: UserData) => {
+          navigator.clipboard.writeText(row?.name ?? '');
+          return signal(null);
+        },
+      },
+    ],
   },
 ];
 
@@ -34,6 +44,22 @@ export const USER_COLUMN_DEFS_DETAILS_MINIMAL: ColumnDefinition<UserData>[] = [
     searchable: true,
     sortable: true,
     valueDisplayMapper: (row: UserData) => row?.phone ?? '',
+    cellActionButtons: [
+      {
+        buttonText: '📞 Call',
+        clickAction: (row: UserData) => {
+          alert(`Ring Ring 📞\nCalling ${row?.phone ?? 'unknown number'}...`);
+          return signal(null);
+        },
+      },
+      {
+        buttonText: '📱 Text',
+        clickAction: (row: UserData) => {
+          alert(`SMS to ${row?.phone ?? 'unknown number'}...`);
+          return signal(null);
+        },
+      },
+    ],
   },
   {
     header: 'Website',

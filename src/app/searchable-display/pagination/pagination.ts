@@ -10,6 +10,7 @@ import { SearchableDisplayState } from '../searchable-display-state';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { switchMap } from 'rxjs';
+import { TableStyleDefinition } from '../table-model';
 
 @Component({
   selector: 'sd-pagination',
@@ -28,10 +29,7 @@ import { switchMap } from 'rxjs';
           @for (numBtn of pageNumberButtons(); track numBtn.buttonText) {
             <button
               type="button"
-              [class.secondary]="
-                this.currentPage() === undefined ||
-                numBtn.buttonText !== this.currentPage()!.toString()
-              "
+              [classList]="numBtn.classList"
               (click)="numBtn.clickAction()"
             >
               {{ numBtn.buttonText }}
@@ -45,8 +43,10 @@ import { switchMap } from 'rxjs';
         </fieldset>
         @if (tmodel.pagination.pageSizeOptions && tmodel.pagination.pageSizeOptions.length > 1) {
           <fieldset role="group" aria-label="Page size selection">
-            <legend>Page Size</legend>
-            <select formControlName="pageSizeDropdown">
+            @if (tableStyles()?.paginationClasses?.showPageSizeLabel) {
+              <legend>Page Size</legend>
+            } 
+            <select formControlName="pageSizeDropdown" [classList]="tableStyles()?.paginationClasses?.pageSizeDropdownClasses">
               @for (sizeOption of tmodel.pagination.pageSizeOptions; track sizeOption) {
                 <option value="{{ sizeOption }}">
                   {{ sizeOption }}
@@ -69,6 +69,7 @@ export default class Pagination {
   protected readonly tableStateService = inject(SearchableDisplayState);
   protected readonly tableModel = this.tableStateService.tableModel;
   protected readonly tableState = this.tableStateService.tableState;
+  protected readonly tableStyles = this.tableStateService.tableStyles;
 
   protected readonly paginationForm = inject(FormBuilder).group({
     pageSizeDropdown: [''],
@@ -135,6 +136,7 @@ export default class Pagination {
           clickAction: () => {
             this.tableStateService.pageChanged(pageNum);
           },
+          classList: this.pageNumberButtonClass(this.tableStyles(), this.currentPage(), pageNum),
         };
       });
     }
@@ -172,6 +174,14 @@ export default class Pagination {
     }
     return [];
   });
+
+  protected pageNumberButtonClass(tableStyles: TableStyleDefinition | undefined, currentPage: number, buttonNumber: number): string {
+    const selected = currentPage === buttonNumber;
+    if (selected && tableStyles?.paginationClasses?.activePageButtonClasses) {
+      return tableStyles?.paginationClasses?.activePageButtonClasses ?? '';
+    }
+    return (tableStyles?.paginationClasses?.pageButtonClasses ?? '');
+  }
 
   private handleFirstButton(pageButtons: string[]): PageButton[] {
     if (pageButtons.includes('first-last') || pageButtons.includes('all')) {

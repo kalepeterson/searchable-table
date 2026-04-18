@@ -1,6 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { User, UserData } from '../models/user';
 import { map } from 'rxjs';
 
@@ -9,17 +8,39 @@ import { map } from 'rxjs';
 })
 export class UserPlaceholderService {
   private readonly http = inject(HttpClient);
+  private readonly refreshTrigger = signal(false);
+  private users$ = signal<UserData[]>([]);
 
-  users = toSignal(
-    this.http.get<User[]>('https://jsonplaceholder.typicode.com/users').pipe(
-      map((users) =>
-        users.map(
-          (user) => this.formatUserData(user)
+  users = computed(() => {
+    var currentUsers = this.users$();
+    if (currentUsers.length === 0 || this.refreshTrigger()) {
+      var obs = this.http.get<User[]>(`https://jsonplaceholder.typicode.com/users`)
+      .pipe(
+        map(users =>
+          users.map(
+            (user) => this.formatUserData(user)
+          ),
         ),
-      ),
-    ),
-    { initialValue: [] as UserData[] },
-  );
+      ).subscribe(
+        {
+          next: formattedUsers => {
+            this.users$.set(formattedUsers);
+          },
+          complete: () => {
+            this.refreshTrigger.set(false);
+            obs.unsubscribe();
+          }
+        }
+      );
+    }
+    return this.users$();
+  });
+
+  refreshUsers() {
+    if (!this.refreshTrigger()) {
+      this.refreshTrigger.set(true);
+    }
+  }
 
   generateRandomUser(): UserData {
     const newUser: User = {

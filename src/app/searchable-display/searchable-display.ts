@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
-import { TableModel } from './table-model';
+import { TableModel, TableStyleDefinition } from './table-model';
 import { ColumnDefHeaders } from './column-def-headers/column-def-headers';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ColumnDefBody } from './column-def-body/column-def-body';
@@ -30,10 +30,10 @@ import Pagination from './pagination/pagination';
           }
         </select>
       }
-      <table [classList]="tableStyleClasses()">
-        <thead sd-column-def-headers></thead>
-        <tbody sd-column-def-body></tbody>
-        <tfoot sd-column-def-footer></tfoot>
+      <table [classList]="tableStyle()?.tableClasses">
+        <thead [classList]="tableStyle()?.headerClasses" sd-column-def-headers></thead>
+        <tbody [classList]="tableStyle()?.bodyClasses" sd-column-def-body></tbody>
+        <tfoot [classList]="tableStyle()?.footerClasses" sd-column-def-footer></tfoot>
       </table>
       <sd-pagination></sd-pagination>
     </form>
@@ -49,7 +49,7 @@ export class SearchableDisplay {
   tableModel = input.required<TableModel>();
   dataRows = input.required<any[]>();
   title = input<string>();
-  tableStyleClasses = input<string[]>();
+  tableStyle = input<TableStyleDefinition>();
 
   protected readonly tableStateService = inject(SearchableDisplayState);
 
@@ -111,6 +111,11 @@ export class SearchableDisplay {
         this.tableStateService.patchDataRows(this.dataRows());
       } else if (this.dataRowChangeDetected()) {
         this.tableStateService.patchDataRows(this.dataRows());
+      }
+    });
+    effect(() => {
+      if (this.tableStyle()) {
+        this.tableStateService.setTableStyles(this.tableStyle()!);
       }
     });
     effect(() => {

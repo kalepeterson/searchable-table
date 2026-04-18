@@ -5,6 +5,7 @@ export interface ColumnDefinition<T = any> {
   searchable: boolean;
   sortable: boolean;
   valueDisplayMapper: (row: T) => string;
+  cellActionButtons?: ActionButtonDefinition<T>[];
 }
 
 export interface ColumnVisibilityOptions<T = any> {
@@ -57,4 +58,19 @@ export interface TableState<T = any> {
 export interface ColumnSearchTerm {
   columnHeader: string;
   searchTerm: string | undefined;
+}
+
+export interface TableStyleDefinition<T = any> {
+  tableClasses?: string;
+  headerClasses?: string;
+  bodyClasses?: string;
+  footerClasses?: string;
+  cellClasses?: (row: T, col: ColumnDefinition<T>) => string;
+  actionCellClasses?: (row: T, button: ActionButtonDefinition<T>) => string;
+  paginationClasses?: {
+    showPageSizeLabel?: boolean;
+    pageSizeDropdownClasses?: string;
+    pageButtonClasses?: string;
+    activePageButtonClasses?: string;
+  };
 }
