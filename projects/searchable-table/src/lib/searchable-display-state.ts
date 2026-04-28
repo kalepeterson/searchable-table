@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
-import { ColumnDefinition, ColumnSearchTerm, TableModel, TableState, TableStyleDefinition } from './table-model';
+import { ColumnDefinition, TableModel, TableStyleDefinition } from './table-model';
+import { ColumnSearchTerm, TableState } from './table-state';
 
 @Injectable()
 export class SearchableDisplayState {

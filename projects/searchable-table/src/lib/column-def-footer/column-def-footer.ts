@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@a
 import { SearchableDisplayState } from '../searchable-display-state';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, map, merge } from 'rxjs';
-import { ColumnSearchTerm } from '../table-model';
+import { ColumnSearchTerm } from '../table-state';
 
 @Component({
   selector: 'tfoot[sd-column-def-footer]',

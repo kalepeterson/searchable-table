@@ -1,6 +1,6 @@
-# SearchableTable
+# Searchable Table - An Angular Component Library
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.4.
+This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.4.
 
 ## Development server
 
