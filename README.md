@@ -1,30 +1,108 @@
 # Searchable Table - An Angular Component Library
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.4.
+Searchable Table is an Angular component designed to simplify displaying large amounts of data.
 
-## Development server
+## Features
+Searchable Table currently supports the following features:
 
-To start a local development server, run:
+### Searching
+Globally search for text across all of the displayed data cells, or search for a value within a specific column.
 
+The global search feature is optional. Which columns are searchable is also specified via the `TableModel`.
+
+### Column Sets
+Display and allow selection of named collections of columns, such as "Demographics" or "Details".
+
+Hiding and showing all columns is also supported. Hiding all columns will leave action columns and the defined "base" columns which are always shown.
+
+### Pagination
+Display a subset of rows controlled by pagination buttons and a row count selector.
+
+Pagination buttons always include the page number buttons, but can also include buttons for the Next/Previous page, First/Last page, both, or neither. Pagination can also be disabled entirely.
+
+The row counts available are also specified via the `TableModel`.
+
+### Sorting
+Columns can be sorted (if configured to allow sorting) by clicking the `th` column header.
+
+### Row Actions
+Action buttons can be defined as part of any column's data cells. Columns specifically for actions upon a row can be defined for the left-most and/or right-most columns in the table.
+
+### Data Cell Display
+The `TableModel` can be used to specify how each column's data cells are calculated.
+
+### Styling Customization
+CSS classes can be specified for various parts of the table elements.
+
+## Using Searchable Table
+A full working example can be found at the [Searchable Table Demo repo](https://github.com/kalepeterson/searchable-table-demo).
+
+Searchable Table is available on NPM, start by running the following command in an initialized Angular project:
 ```bash
-ng serve
+npm install ngx-searchable-table
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Once installed, the component can be used by importing the `SearchableDisplay` component from `ngx-searchable-table` and placing the element `sd-searchable-display` into your template HTML.
 
-## Code scaffolding
+The following inputs are mandatory:  `dataRows` and `tableModel`.  `dataRows` contains an array of your data objects that Searchable Table should operate upon.  `tableModel` defines how Searchable Table should display and handle the data rows.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+A trivial example would be:
+```html 
+<sd-searchable-display [tableModel]="tableModel()" [dataRows]="data"></sd-searchable-display>
+```
+```ts
+import { SearchableDisplay, TableModel } from 'ngx-searchable-table';
+@Component({
+    // ... rest of component fields
+    imports: [SearchableDisplay]
+})
+export class MyComponent {
+    protected readonly data = [
+        {
+            "username": "a"
+        },
+        {
+            "username": "b"
+        }
+    ];
 
-```bash
-ng generate component component-name
+    tableModel(): TableModel<any> {
+        var model = new TableModel<any>();
+        return {
+            ...model,
+            dataColumns: [
+                {
+                    header: 'Username',
+                    searchable: true,
+                    sortable: true,
+                    valueDisplayMapper: (row: any) => row?.username ?? '',
+                }
+            ]
+        }
+    }
+}
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+### Using `TableModel`
+The `tableModel` input tells Searchable Table how to work with the data rows being provided to it.
 
-```bash
-ng generate --help
-```
+#### Column Definitions
+todo
+
+#### Global Search
+todo
+
+#### Column Visibility Sets
+todo
+
+#### Pagination Options
+todo
+
+#### Action Columns
+todo
+
+#### Row Identifier
+todo
 
 ## Building
 
@@ -43,17 +121,3 @@ To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use th
 ```bash
 ng test
 ```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
