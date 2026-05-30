@@ -164,7 +164,7 @@ Fields for `tableModel.actionColumns`:
 |----------|----|-----------|-------|
 |header|`string`|The text to display in the `th` element for this column.|`'View Details'`|
 |columnLocation|`'start' \| 'end'`|Whether to place the column to the left (start) of the data columns or the right (end) of the data columns.|`'start'`|
-|actionButtonDefinitions|`ActionButtonDefinition<T>[]`|One or many buttons to render in each row of this column. See the [Action Button Definition Fields](#action-button-definitions) section above for details.|`[ { buttonText: 'View Details', clickAction: (row: Shellfish) => { alert(`Shellfish details:\n${JSON.stringify(row, null, 2)}`); return signal(null); } } ]`|
+|actionButtonDefinitions|`ActionButtonDefinition<T>[]`|One or many buttons to render in each row of this column. See the [Action Button Definition Fields](#action-button-definitions) section above for details.|`[ { buttonText: 'View Details', clickAction: (row: Shellfish) => { alert("Shellfish details:\n" + JSON.stringify(row, null, 2)); return signal(null); } } ]`|
 
 #### Row Identifier
 Angular's change detection for rows in `<table>` elements requires a tracking function.  `tableModel.rowIdentifier` provides a field to specify such a function.
