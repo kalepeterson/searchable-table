@@ -135,10 +135,40 @@ Visibility groups are assigned here: `tableModel.dataColumnVisibility.visibility
 The default visibility group can be specifying `'all'`, `'none'`, or a valid key within the `visibilityGroups` value at this field: `tableModel.dataColumnVisibility.defaultVisibilityGroup`.
 
 #### Pagination Options
-todo
+The `tableModel.pagination` field allows specifying which, if any, page sizing options and navigation controls should be displayed.
+
+If no pagination (always show all rows) is desired, the `tableModel.pagination` field should simply be set to `null` or left `undefined`.
+
+##### Page Size Options
+The `tableModel.pagination.pageSizeOptions` field accepts an array of page size numbers.  These should be positive, unique integers.
+
+The page size options will appear in the Page Size dropdown beneath the `table` element.
+
+##### Page Buttons
+The `tableModel.pagination.pageButtons` field accepts an array of any of the following values:
+* `'all'`
+* `'first-last'`
+    * Displays buttons to navigate to the first and last pages of the data
+* `'next-previous'`
+    * Displays buttons to navigate to the next and previous pages of the data
+
+Putting `all` and any of the other options is redundant, `all` is provided as a convenience.
+
+The buttons for specific page numbers (e.g. Page 3, Page 4) will always appear if the `tableModel.pagination` field is set, the `pageButtons` field just adds more buttons on either side of the numbered buttons.
 
 #### Action Columns
-todo
+Action columns provide buttons to allow users to perform some action upon a certain row.
+
+Fields for `tableModel.actionColumns`:
+|Field Name|Type|Description|Example|
+|----------|----|-----------|-------|
+|header|`string`|The text to display in the `th` element for this column.|`'View Details'`|
+|columnLocation|`'start' \| 'end'`|Whether to place the column to the left (start) of the data columns or the right (end) of the data columns.|`'start'`|
+|actionButtonDefinitions|`ActionButtonDefinition<T>[]`|One or many buttons to render in each row of this column. See the [Action Button Definition Fields](#action-button-definitions) section above for details.|`[ { buttonText: 'View Details', clickAction: (row: Shellfish) => { alert(`Shellfish details:\n${JSON.stringify(row, null, 2)}`); return signal(null); } } ]`|
 
 #### Row Identifier
-todo
+Angular's change detection for rows in `<table>` elements requires a tracking function.  `tableModel.rowIdentifier` provides a field to specify such a function.
+
+`tableModel.rowIdentifier` is a `function(row: T) => string` that should result in unique values for each row in a table.
+
+The default `rowIdentifier` is just `JSON.stringify(row)`.
